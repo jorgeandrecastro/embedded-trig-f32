@@ -86,6 +86,46 @@ pub fn sin(x: f32) -> f32 {
 pub fn cos(x: f32) -> f32 {
     sin(x + consts::FRAC_PI_2)
 }
+
+/// Calcule simultanément le sinus et le cosinus pour optimiser le temps cycle.
+pub fn sincos(x: f32) -> (f32, f32) {
+    if !x.is_finite() {
+        return (f32::NAN, f32::NAN);
+    }
+    let s = sin(x);
+    // Exploite la propriété sin(x + PI/2) = cos(x) ou calcule le cosinus direct
+    let c = cos(x);
+    (s, c)
+}
+
+/// Calcule la tangente.
+pub fn tan(x: f32) -> Result<f32, TrigError> {
+    if !x.is_finite() {
+        return Err(TrigError::NonFiniteValue);
+    }
+
+    let c = cos(x);
+    if c == 0.0 {
+        return Err(TrigError::Undefined);
+    }
+
+    Ok(sin(x) / c)
+}
+
+/// Calcule la cotangente.
+pub fn cot(x: f32) -> Result<f32, TrigError> {
+    if !x.is_finite() {
+        return Err(TrigError::NonFiniteValue);
+    }
+
+    let s = sin(x);
+    if s == 0.0 {
+        return Err(TrigError::Undefined);
+    }
+
+    Ok(cos(x) / s)
+}
+
 /// Calcule l'arc tangente (y, x).
 pub fn atan2(y: f32, x: f32) -> Result<f32, TrigError> {
     if !y.is_finite() || !x.is_finite() { return Err(TrigError::NonFiniteValue); }
@@ -155,4 +195,50 @@ mod tests {
         assert!((asin(0.5).unwrap() - PI / 6.0).abs() < EPS);
         assert!((acos(0.5).unwrap() - PI / 3.0).abs() < EPS);
     }
+
+
+    #[test]
+    fn test_tan_basic() {
+       assert!((tan(0.0).unwrap()).abs() < EPS);
+       assert!((tan(PI / 4.0).unwrap() - 1.0).abs() < EPS);
+    }
+    
+    
+    #[test]
+    fn test_tan_non_finite() {
+       assert_eq!(tan(f32::NAN).unwrap_err(), TrigError::NonFiniteValue);
+       assert_eq!(tan(f32::INFINITY).unwrap_err(), TrigError::NonFiniteValue);
+    }
+
+    #[test]
+    fn test_sincos_basic() {
+      let (s, c) = sincos(PI / 4.0);
+      assert!((s - (PI / 4.0).sin()).abs() < EPS);
+      assert!((c - (PI / 4.0).cos()).abs() < EPS);
+    }
+
+
+    #[test]
+    fn test_sincos_non_finite() {
+      let (s, c) = sincos(f32::NAN);
+      assert!(s.is_nan() && c.is_nan());
+    }
+
+    #[test]
+    fn test_cot_basic() {
+       assert!((cot(PI / 4.0).unwrap() - 1.0).abs() < EPS);
+       assert!((cot(PI / 2.0).unwrap()).abs() < EPS);
+    }
+
+    #[test]
+   fn test_cot_undefined() {
+      assert_eq!(cot(0.0).unwrap_err(), TrigError::Undefined);
+   }
+
+   #[test]
+   fn test_cot_non_finite() {
+     assert_eq!(cot(f32::NAN).unwrap_err(), TrigError::NonFiniteValue);
+   }
+
+  
 }

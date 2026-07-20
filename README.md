@@ -6,6 +6,10 @@
 
 **embedded-trig-f32** est une bibliothèque de fonctions trigonométriques `f32` ultra-rapide, écrite en **Pur Rust**, sans aucune dépendance (`zero-deps`) et optimisée pour les systèmes embarqués `no_std`.
 
+La version 0.2 ajoute les fonctions `tan`, `cot` et `sincos` à l’API, tout en conservant les approximations rapides et la sécurité des fonctions inverses.
+
+Consulte le [CHANGELOG](CHANGELOG.md) pour voir les détails de cette version.
+
 ## 🚀 Points forts
 
 *   **Zéro Dépendance** : Pas besoin de `libm`.
@@ -20,7 +24,7 @@ Ajoute ceci à ton fichier `Cargo.toml` :
 
 ```toml
 [dependencies]
-embedded-trig-f32 = "0.1.0"
+embedded-trig-f32 = "0.2"
 
 ```
 
@@ -39,6 +43,9 @@ rustflags = ["-C", "target-cpu=cortex-m33", "-C", "target-feature=+vfp2"]
 |----------------|----------------------|--------------------------------|
 | `sin(x)`       | Sinus (radians)      | `f32`                          |
 | `cos(x)`       | Cosinus (radians)    | `f32`                          |
+| `tan(x)`       | Tangente             | `Result<f32, TrigError>`       |
+| `cot(x)`       | Cotangente           | `Result<f32, TrigError>`       |
+| `sincos(x)`    | Sinus et cosinus     | `(f32, f32)`                   |
 | `atan2(y, x)`  | Arc tangente 2       | `Result<f32, TrigError>`       |
 | `asin(x)`      | Arc sinus            | `Result<f32, TrigError>`       |
 | `acos(x)`      | Arc cosinus          | `Result<f32, TrigError>`       |
@@ -50,7 +57,7 @@ rustflags = ["-C", "target-cpu=cortex-m33", "-C", "target-feature=+vfp2"]
 **Voici comment l'utiliser dans un projet de contrôle moteur ou de robotique :**
 
 ```rust 
-use embedded_trig_f32::{sin, cos, atan2, consts::PI};
+use embedded_trig_f32::{sin, cos, tan, sincos, atan2, consts::PI};
 
 fn main() {
     let angle = PI / 4.0; // 45 degrés
@@ -58,6 +65,10 @@ fn main() {
     // Calcul direct
     let s = sin(angle);
     let c = cos(angle);
+    let (s2, c2) = sincos(angle);
+
+    // Calculs supplémentaires
+    let t = tan(angle).unwrap_or(0.0);
     
     // Calcul inverse sécurisé
     match atan2(s, c) {

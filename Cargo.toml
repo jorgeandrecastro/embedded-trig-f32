@@ -1,14 +1,14 @@
 [package]
 name = "embedded-trig-f32"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["Jorge Andre Castro <georgeandrec@gmail.com>"]
 license = "GPL-2.0-or-later"
-description = "sin, cos, tan, asin, acos, atan, atan2 f32 FPU pour no_std embarqué, testée sur Cortex-M33"
+description = "sin, cos, tan, cot, sincos, asin, acos, atan2 f32 FPU pour no_std embarqué, testée sur Cortex-M33"
 repository = "https://github.com/jorgeandrecastro/embedded-trig-f32"
 documentation = "https://docs.rs/embedded-trig-f32"
 readme = "README.md"
-keywords = ["trig", "math", "no-std", "embedded", "f32"]
+keywords = ["trig", "math", "no-std", "embedded", "f32", "sincos", "atan2"]
 categories = ["mathematics", "no-std", "embedded"]
 
 [dependencies]
