@@ -8,7 +8,7 @@ description = "sin, cos, tan, cot, sincos, asin, acos, atan2 f32 FPU pour no_std
 repository = "https://github.com/jorgeandrecastro/embedded-trig-f32"
 documentation = "https://docs.rs/embedded-trig-f32"
 readme = "README.md"
-keywords = ["trig", "math", "no-std", "embedded", "f32", "sincos", "atan2"]
+keywords = ["trig", "math", "no-std", "embedded", "f32"]
 categories = ["mathematics", "no-std", "embedded"]
 
 [dependencies]
