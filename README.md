@@ -79,12 +79,30 @@ fn example() {
 
 ## 🧪 Précision & Tests
 
-* `sin`, `cos`, `atan` : erreur absolue attendue de l'ordre de **1e-7** (polynômes minimax f32).
+Erreur mesurée contre une référence `f64` (balayages de 100 000 à 400 000 points) :
+
+| Fonction            | Plage testée    | Erreur abs. max | Erreur max (ULP) |
+|---------------------|-----------------|-----------------|------------------|
+| `sin`               | [-100, 100]     | 8,8·10⁻⁸        | 1                |
+| `cos`               | [-100, 100]     | 8,9·10⁻⁸        | 1                |
+| `sin` / `cos`       | [-8192, 8192]   | 9,0·10⁻⁸        | 45 (près des zéros) |
+| `sincos`            | [-10, 10]       | 8,9·10⁻⁸        | 1                |
+| `tan`               | [-1,4, 1,4]     | 7,3·10⁻⁷        | 3                |
+| `cot`               | [0,2, 2,9]      | 6,5·10⁻⁷        | 3                |
+| `atan`              | [-50, 50]       | 1,3·10⁻⁷        | 2                |
+| `atan2`             | tour complet    | 2,7·10⁻⁷        | 3                |
+| `asin`              | [-1, 1]         | 1,6·10⁻⁷        | 4                |
+| `acos`              | [-1, 1]         | 2,8·10⁻⁷        | 3                |
+
+* L'erreur absolue de `sin`/`cos` est de l'ordre de la précision du `f32` lui-même (~6·10⁻⁸ pour une valeur proche de 1). Le nombre d'ULP plus élevé sur [-8192, 8192] ne se produit que près des zéros de la fonction, où l'erreur absolue reste de ~9·10⁻⁸.
 * **Grands arguments** : précision maximale pour `|x| ≤ 8192`. Au-delà, l'argument est d'abord réduit par `x % TAU` : le résultat reste borné dans `[-1, 1]` mais perd en précision (limite inhérente au `f32`).
-* La suite de tests compare la bibliothèque à `f64` sur des **balayages denses** (sin, cos, atan, asin, acos, quatre quadrants, ±0, grands arguments), avec une tolérance de 1e-6 (5e-6 pour `asin`/`acos`).
+* `tan` et `cot` grossissent l'erreur à l'approche de leurs pôles (comportement mathématique normal).
+
+### Reproduire les mesures
 
 ```bash
-cargo test
+cargo test                                  # tests unitaires et balayages
+cargo test --test accuracy -- --nocapture   # rapport d'erreur par fonction
 ```
 
 Les tests s'exécutent sur la machine hôte avec `std` ; la bibliothèque, elle, reste `no_std`.
