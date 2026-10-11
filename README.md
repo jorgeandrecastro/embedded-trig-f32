@@ -1,102 +1,97 @@
 # embedded-trig-f32
 
 [![Crate](https://img.shields.io/badge/rust-no__std-orange.svg)]()
-[![License](https://img.shields.io/badge/license-GPLv2-blue.svg)]()
-[![Target](https://img.shields.io/badge/target-Cortex--M33%20%7C%20M4F%20%7C%20M7-green.svg)]()
+[![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)]()
+[![Target](https://img.shields.io/badge/target-Cortex--M0%2B%20%7C%20M4F%20%7C%20M33%20%7C%20M7-green.svg)]()
 
-**embedded-trig-f32** est une bibliothèque de fonctions trigonométriques `f32` ultra-rapide, écrite en **Pur Rust**, sans aucune dépendance (`zero-deps`) et optimisée pour les systèmes embarqués `no_std`.
+**embedded-trig-f32** est une bibliothèque de fonctions trigonométriques `f32` écrite en **Rust pur**, pour les systèmes embarqués `no_std`. Elle n'utilise ni `libm` ni `micromath` : seule dépendance, la crate sœur [`embedded-f32-sqrt`](https://crates.io/crates/embedded-f32-sqrt) pour la racine carrée.
 
-La version 0.2 ajoute les fonctions `tan`, `cot` et `sincos` à l’API, tout en conservant les approximations rapides et la sécurité des fonctions inverses.
-
-Consulte le [CHANGELOG](CHANGELOG.md) pour voir les détails de cette version.
+La version 0.3 remplace l'approximation de Bhaskara I par une **réduction d'argument par quadrant** et des **polynômes minimax**, ce qui ramène l'erreur de ~1,6·10⁻³ à l'ordre de 10⁻⁷. Voir le [CHANGELOG](CHANGELOG.md).
 
 ## 🚀 Points forts
 
-*   **Zéro Dépendance** : Pas besoin de `libm`.
-*   **Hardware-Aware** : Utilise l'instruction FPU `VSQRT` si disponible, sinon bascule sur Newton-Raphson.
-*   **Haute Performance** : Utilise des approximations rationnelles (Bhaskara I) et polynomiales (McCutcheon) pour un compromis idéal vitesse/précision.
-*   **Sécurité** : Retourne des `Result<f32, TrigError>` pour les fonctions inverses, évitant les crashs silencieux.
-*   **#![forbid(unsafe_code)]** : Pour une safety .
+* **Précis** : réduction de Cody-Waite (π/2 en trois constantes) et polynômes minimax de type Cephes pour `sin`, `cos` et `atan`.
+* **Efficace** : `sincos` ne fait qu'**une seule** réduction d'argument ; `sin` et `cos` ont chacun un chemin direct.
+* **Une seule dépendance** : `embedded-f32-sqrt` (Newton-Raphson, déterministe, sans FPU requise).
+* **Sûr** : `#![forbid(unsafe_code)]`, `Result<f32, TrigError>` pour les fonctions qui ont des points indéfinis, gestion explicite de NaN et ±∞.
+* **Portable** : fonctionne sur Cortex-M0+ (sans FPU) comme sur M4F / M33 / M7.
 
 ## 🛠 Installation
 
-Ajoute ceci à ton fichier `Cargo.toml` :
-
 ```toml
 [dependencies]
-embedded-trig-f32 = "0.2"
-
+embedded-trig-f32 = "0.3"
 ```
 
-**Pour profiter de la puissance de la FPU sur ton Cortex-M33**(comme sur le RP2350) ou STM32, configure ton .cargo/config.toml :
-```
-[target.thumbv8m.main-none-eabihf]
-rustflags = ["-C", "target-cpu=cortex-m33", "-C", "target-feature=+vfp2"]
+Aucune option de compilation particulière n'est nécessaire. Pour une cible avec FPU (RP2350, STM32…), utilisez simplement la cible `hard-float` correspondante, par exemple `thumbv8m.main-none-eabihf` ou `thumbv7em-none-eabihf`.
 
-```
+---
 
-----
+## 📖 Fonctions disponibles
 
-# 📖 Fonctions disponibles
+| Fonction      | Description                          | Retour                   |
+|---------------|--------------------------------------|--------------------------|
+| `sin(x)`      | Sinus (radians)                      | `f32`                    |
+| `cos(x)`      | Cosinus (radians)                    | `f32`                    |
+| `sincos(x)`   | Sinus et cosinus (une réduction)     | `(f32, f32)`             |
+| `tan(x)`      | Tangente                             | `Result<f32, TrigError>` |
+| `cot(x)`      | Cotangente                           | `Result<f32, TrigError>` |
+| `atan(x)`     | Arc tangente, `[-π/2, π/2]`          | `f32`                    |
+| `atan2(y, x)` | Arc tangente 2, `[-π, π]`            | `Result<f32, TrigError>` |
+| `asin(x)`     | Arc sinus, `[-π/2, π/2]`             | `Result<f32, TrigError>` |
+| `acos(x)`     | Arc cosinus, `[0, π]`                | `Result<f32, TrigError>` |
 
-| Fonction       | Description          | Retour                         |
-|----------------|----------------------|--------------------------------|
-| `sin(x)`       | Sinus (radians)      | `f32`                          |
-| `cos(x)`       | Cosinus (radians)    | `f32`                          |
-| `tan(x)`       | Tangente             | `Result<f32, TrigError>`       |
-| `cot(x)`       | Cotangente           | `Result<f32, TrigError>`       |
-| `sincos(x)`    | Sinus et cosinus     | `(f32, f32)`                   |
-| `atan2(y, x)`  | Arc tangente 2       | `Result<f32, TrigError>`       |
-| `asin(x)`      | Arc sinus            | `Result<f32, TrigError>`       |
-| `acos(x)`      | Arc cosinus          | `Result<f32, TrigError>`       |
+### Comportement aux limites
 
-----
+* `sin`, `cos`, `sincos` renvoient `NaN` si l'entrée n'est pas finie.
+* `tan` / `cot` renvoient `Err(Undefined)` près d'un pôle (`|cos|` ou `|sin|` < 1e-7), par exemple `tan(PI/2)`, `cot(0.0)`.
+* `atan2(0.0, 0.0)` renvoie `Err(Undefined)` (la `std` renvoie 0). `atan2` gère `±0.0` : `atan2(-0.0, -1.0) = -π`.
+* `asin` / `acos` renvoient `Err(DomainError)` si `|x| > 1`, et `Err(NonFiniteValue)` pour NaN / ±∞.
+* `atan` est infaillible : `atan(±∞) = ±π/2`, `atan(NaN) = NaN`.
 
-# 💻 Exemple d'utilisation
+---
 
-**Voici comment l'utiliser dans un projet de contrôle moteur ou de robotique :**
+## 💻 Exemple d'utilisation
 
-```rust 
-use embedded_trig_f32::{sin, cos, tan, sincos, atan2, consts::PI};
+```rust
+use embedded_trig_f32::{atan2, sincos, tan, consts::PI};
 
-fn main() {
-    let angle = PI / 4.0; // 45 degrés
-    
-    // Calcul direct
-    let s = sin(angle);
-    let c = cos(angle);
-    let (s2, c2) = sincos(angle);
+fn example() {
+    let angle = PI / 4.0; // 45°
 
-    // Calculs supplémentaires
+    let (s, c) = sincos(angle);
     let t = tan(angle).unwrap_or(0.0);
-    
+
     // Calcul inverse sécurisé
     match atan2(s, c) {
         Ok(res) => {
             // res est proche de PI/4
-        },
-        Err(e) => {
-            // Gestion de l'erreur (ex: NaN ou Undefined)
+            let _ = (res, t);
+        }
+        Err(_e) => {
+            // NaN, infini ou point indéfini
         }
     }
 }
 ```
 
-----
+---
 
-# 🧪 Précision & Tests
+## 🧪 Précision & Tests
 
-**La bibliothèque est testée avec une tolérance de 2.10^{-3} (Bhaskara).**
+* `sin`, `cos`, `atan` : erreur absolue attendue de l'ordre de **1e-7** (polynômes minimax f32).
+* **Grands arguments** : précision maximale pour `|x| ≤ 8192`. Au-delà, l'argument est d'abord réduit par `x % TAU` : le résultat reste borné dans `[-1, 1]` mais perd en précision (limite inhérente au `f32`).
+* La suite de tests compare la bibliothèque à `f64` sur des **balayages denses** (sin, cos, atan, asin, acos, quatre quadrants, ±0, grands arguments), avec une tolérance de 1e-6 (5e-6 pour `asin`/`acos`).
 
-Pour lancer les tests sur votre machine de développement :
-
-```
+```bash
 cargo test
 ```
 
-----
+Les tests s'exécutent sur la machine hôte avec `std` ; la bibliothèque, elle, reste `no_std`.
 
-# ⚖️ Licence
+---
+
+## ⚖️ Licence
 
 Ce programme est un logiciel libre ; vous pouvez le redistribuer et/ou le modifier selon les termes de la Licence Publique Générale GNU (GPL) version 2 ou ultérieure.
 

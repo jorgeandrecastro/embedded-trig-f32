@@ -1,6 +1,6 @@
 [package]
 name = "embedded-trig-f32"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 authors = ["Jorge Andre Castro <georgeandrec@gmail.com>"]
 license = "GPL-2.0-or-later"
@@ -12,6 +12,7 @@ keywords = ["trig", "math", "no-std", "embedded", "f32"]
 categories = ["mathematics", "no-std", "embedded"]
 
 [dependencies]
+embedded-f32-sqrt = "0.2"
 
 
 [profile.release]
